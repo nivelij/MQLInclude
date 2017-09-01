@@ -7,13 +7,11 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-enum tradeMode
-{
-   Buy,
-   Sell
-};
+#include <CommonLib.mqh>
+#include <CustomError.mqh>
 
 const int      SLIPPAGE = 3;
+const int      DIGIT = int(MarketInfo(Symbol(), MODE_DIGITS));
 
 int _OpenBuyOrderECN(double lot_size, int magic_number, int stop_loss_pts, int take_profit_pts)
 {
@@ -103,7 +101,7 @@ int OpenOrder(tradeMode mode, bool is_ecn, double lot_size, int magic_number, in
    }
    else {
       Print("Support for other broker type will be added soon!");
-      return -1;
+      return CERR_UNSUPPORTED_BROKER_TYPE;
    }
 }
 
@@ -146,5 +144,40 @@ double _GetTakeProfit(tradeMode mode, int take_profit_pts)
 
 int GetSpread()
 {
-   return int(NormalizeDouble(MathPow(10, int(MarketInfo(Symbol(), MODE_DIGITS))) * MathAbs(Ask - Bid), 0));
+   return int(NormalizeDouble(MathPow(10, DIGIT) * MathAbs(Ask - Bid), 0));
+}
+
+int GetDistanceInPoints(int ticket)
+{
+   bool orderSelected = OrderSelect(ticket, SELECT_BY_TICKET);
+   
+   if (orderSelected)
+   {
+      int orderType = OrderType();
+
+      if (orderType == OP_BUY)
+      {
+         return int(NormalizeDouble(MathPow(10, DIGIT) * (Bid - OrderOpenPrice()), 0));
+      }
+      else if (orderType == OP_SELL)
+      {
+         return int(NormalizeDouble(MathPow(10, DIGIT) * (OrderOpenPrice() - Ask), 0));
+      }
+      else
+      {
+         Print("Only BUY and SELL order allowed for calling this function.");
+         return CERR_INVALID_ORDER_TYPE;
+      }
+   }
+   else
+   {
+      Print("Order ", ticket, " cannot be selected. Reason ", GetLastError());
+      return CERR_ORDER_NOT_SELECTED;
+   }
+}
+
+bool IsOrderOpen(int ticket)
+{
+   Print("Order Select Result ", OrderSelect(ticket, SELECT_BY_TICKET));
+   return OrderSelect(ticket, SELECT_BY_TICKET);
 }

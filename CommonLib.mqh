@@ -34,3 +34,9 @@ enum tradeHour
    HOUR_22=22,
    HOUR_23=23,
 };
+
+enum tradeMode
+{
+   Buy,
+   Sell
+};
