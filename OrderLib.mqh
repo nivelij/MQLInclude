@@ -39,7 +39,7 @@ int _OpenBuyOrderECN(double lot_size, int magic_number, int stop_loss_pts, int t
          comment = comment + " with TP at " + string(take_profit);
       }
 
-      if (_ModifyOrder(res, stop_loss, take_profit))
+      if (ModifyOrder(res, stop_loss, take_profit))
       {
          Print(comment);
       }
@@ -74,7 +74,7 @@ int _OpenSellOrderECN(double lot_size, int magic_number, int stop_loss_pts, int 
          comment = comment + " with TP at " + string(take_profit);
       }
 
-      if (_ModifyOrder(res, stop_loss, take_profit))
+      if (ModifyOrder(res, stop_loss, take_profit))
       {
          Print(comment);
       }
@@ -105,7 +105,7 @@ int OpenOrder(tradeMode mode, bool is_ecn, double lot_size, int magic_number, in
    }
 }
 
-bool _ModifyOrder(int ticket, double stop_loss, double take_profit)
+bool ModifyOrder(int ticket, double stop_loss, double take_profit)
 {
    bool modRes = OrderModify(ticket, 0, stop_loss, take_profit, 0);
 
@@ -147,6 +147,18 @@ int GetSpread()
    return int(NormalizeDouble(MathPow(10, DIGIT) * MathAbs(Ask - Bid), 0));
 }
 
+int GetDistanceInPoints(double fromPrice, double toPrice, bool useAbsolute=false)
+{
+   if (useAbsolute)
+   {
+      return int(NormalizeDouble(MathPow(10, DIGIT) * MathAbs((fromPrice - toPrice)), 0));
+   }
+   else
+   {
+      return int(NormalizeDouble(MathPow(10, DIGIT) * (fromPrice - toPrice), 0));
+   }
+}
+
 int GetDistanceInPoints(int ticket)
 {
    bool orderSelected = OrderSelect(ticket, SELECT_BY_TICKET);
@@ -157,11 +169,11 @@ int GetDistanceInPoints(int ticket)
 
       if (orderType == OP_BUY)
       {
-         return int(NormalizeDouble(MathPow(10, DIGIT) * (Bid - OrderOpenPrice()), 0));
+         return GetDistanceInPoints(Bid, OrderOpenPrice());
       }
       else if (orderType == OP_SELL)
       {
-         return int(NormalizeDouble(MathPow(10, DIGIT) * (OrderOpenPrice() - Ask), 0));
+         return GetDistanceInPoints(OrderOpenPrice(), Ask);
       }
       else
       {
@@ -178,6 +190,5 @@ int GetDistanceInPoints(int ticket)
 
 bool IsOrderOpen(int ticket)
 {
-   Print("Order Select Result ", OrderSelect(ticket, SELECT_BY_TICKET));
    return OrderSelect(ticket, SELECT_BY_TICKET);
 }
