@@ -12,7 +12,11 @@
 
 const int      SLIPPAGE = 3;
 const int      DIGIT = int(MarketInfo(Symbol(), MODE_DIGITS));
+const double   SMALLEST_LOT = 0.01;
 
+/*===========================*
+ *     PRIVATE FUNCTION      *
+ *===========================*/
 int _OpenBuyOrderECN(double lot_size, int magic_number, int stop_loss_pts, int take_profit_pts)
 {
    double stop_loss = 0;
@@ -83,6 +87,91 @@ int _OpenSellOrderECN(double lot_size, int magic_number, int stop_loss_pts, int 
    return res;
 }
 
+double _GetStopLoss(tradeMode mode, int stop_loss_pts)
+{
+   if (mode == Sell)
+   {
+      return NormalizeDouble(Ask + stop_loss_pts * Point, Digits);
+   }
+   else
+   {
+      return NormalizeDouble(Bid - stop_loss_pts * Point, Digits);
+   }
+
+}
+
+double _GetTakeProfit(tradeMode mode, int take_profit_pts)
+{
+   if (mode == Sell)
+   {
+      return NormalizeDouble(Ask - take_profit_pts * Point, Digits);
+   }
+   else
+   {
+      return NormalizeDouble(Bid + take_profit_pts * Point, Digits);
+   }
+}
+
+/*===========================*
+ *      PUBLIC FUNCTION      *
+ *===========================*/
+int PartialCloseOrder(int ticketNumber, double closePrice, double lotSize, double partialPercent)
+{
+   if (lotSize == SMALLEST_LOT)
+   {
+      Print("Lot size too small for partial close");
+      return CERR_LOT_TOO_SMALL;
+   }
+   else
+   {
+      bool selected = OrderSelect(ticketNumber, SELECT_BY_TICKET);
+
+      if (selected)
+      {
+         int orderType = OrderType();
+         string symbol = OrderSymbol();
+         int magicNumber = OrderMagicNumber();
+         double closeLotSize = NormalizeDouble(partialPercent/100 * lotSize, 2);
+         double remainingLotSize = NormalizeDouble(lotSize - closeLotSize, 2);
+         bool result = OrderClose(ticketNumber, closeLotSize, closePrice, SLIPPAGE);
+   
+         if (result)
+         {
+            for (int i=0;i < OrdersTotal();i++)
+            {
+               selected = OrderSelect(i, SELECT_BY_POS);
+
+               if (selected)
+               {
+                  // Get new ticket number here
+                  if (OrderType() == orderType
+                        && OrderLots() == remainingLotSize
+                        && OrderSymbol() == symbol
+                        && OrderMagicNumber() == magicNumber)
+                  {
+                     return OrderTicket();
+                  }
+               }
+               else
+               {
+                  return CERR_ORDER_NOT_SELECTED;
+               }
+            }
+
+            return CERR_ORDER_NOT_FOUND;            
+         }
+         else
+         {
+            return CERR_PARTIAL_CLOSE_FAILED;
+         }
+      }
+      else
+      {
+         return CERR_ORDER_NOT_SELECTED;
+      }
+   }
+}
+
 int OpenOrder(tradeMode mode, bool is_ecn, double lot_size, int magic_number, int stop_loss_pts, int take_profit_pts)
 {
    if (is_ecn)
@@ -115,31 +204,6 @@ bool ModifyOrder(int ticket, double stop_loss, double take_profit)
    }
 
    return modRes;
-}
-
-double _GetStopLoss(tradeMode mode, int stop_loss_pts)
-{
-   if (mode == Sell)
-   {
-      return NormalizeDouble(Ask + stop_loss_pts * Point, Digits);
-   }
-   else
-   {
-      return NormalizeDouble(Bid - stop_loss_pts * Point, Digits);
-   }
-
-}
-
-double _GetTakeProfit(tradeMode mode, int take_profit_pts)
-{
-   if (mode == Sell)
-   {
-      return NormalizeDouble(Ask - take_profit_pts * Point, Digits);
-   }
-   else
-   {
-      return NormalizeDouble(Bid + take_profit_pts * Point, Digits);
-   }
 }
 
 int GetSpread()
@@ -188,7 +252,22 @@ int GetDistanceInPoints(int ticket)
    }
 }
 
-bool IsOrderOpen(int ticket)
+int GetTotalOrderCount(string symbol, int magicNumber)
 {
-   return OrderSelect(ticket, SELECT_BY_TICKET);
+   int counter = 0;
+   
+   for (int i=0;i < OrdersTotal();i++)
+   {
+      bool selected = OrderSelect(i, SELECT_BY_POS);
+
+      if (selected)
+      {
+         if (OrderSymbol() == symbol && OrderMagicNumber() == magicNumber)
+         {
+            counter += 1;
+         }
+      }
+   }
+
+   return counter;
 }
