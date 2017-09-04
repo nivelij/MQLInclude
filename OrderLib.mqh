@@ -9,9 +9,9 @@
 
 #include <CommonLib.mqh>
 #include <CustomError.mqh>
+#include <LogLib.mqh>
 
 const int      SLIPPAGE = 3;
-const int      DIGIT = int(MarketInfo(Symbol(), MODE_DIGITS));
 const double   SMALLEST_LOT = 0.01;
 
 /*===========================*
@@ -27,7 +27,7 @@ int _OpenBuyOrderECN(double lot_size, int magic_number, int stop_loss_pts, int t
 
    if (res <= 0)
    {
-      Print("OrderSend Error: ", string(GetLastError()));
+      Error("OrderSend Error: " + string(GetLastError()), __FILE__);
    }
    else
    {
@@ -45,7 +45,7 @@ int _OpenBuyOrderECN(double lot_size, int magic_number, int stop_loss_pts, int t
 
       if (ModifyOrder(res, stop_loss, take_profit))
       {
-         Print(comment);
+         Info(comment, __FILE__);
       }
    }
 
@@ -62,7 +62,7 @@ int _OpenSellOrderECN(double lot_size, int magic_number, int stop_loss_pts, int 
 
    if (res <= 0)
    {
-      Print("OrderSend Error: ", string(GetLastError()));
+      Error("OrderSend Error: " + string(GetLastError()), __FILE__);
    }
    else
    {
@@ -80,7 +80,7 @@ int _OpenSellOrderECN(double lot_size, int magic_number, int stop_loss_pts, int 
 
       if (ModifyOrder(res, stop_loss, take_profit))
       {
-         Print(comment);
+         Info(comment, __FILE__);
       }
    }   
 
@@ -119,7 +119,7 @@ int PartialCloseOrder(int ticketNumber, double closePrice, double lotSize, doubl
 {
    if (lotSize == SMALLEST_LOT)
    {
-      Print("Lot size too small for partial close");
+      Error("Lot size too small for partial close", __FILE__);
       return CERR_LOT_TOO_SMALL;
    }
    else
@@ -189,7 +189,7 @@ int OpenOrder(tradeMode mode, bool is_ecn, double lot_size, int magic_number, in
       return response;
    }
    else {
-      Print("Support for other broker type will be added soon!");
+      Warn("Support for other broker type will be added soon!", __FILE__);
       return CERR_UNSUPPORTED_BROKER_TYPE;
    }
 }
@@ -200,7 +200,7 @@ bool ModifyOrder(int ticket, double stop_loss, double take_profit)
 
    if (!modRes)
    {
-      Print("OrderModify Error: ", string(GetLastError()), " SL ", stop_loss, " TP ", take_profit);
+      Error("OrderModify Error: " + string(GetLastError()) + " SL " + string(stop_loss) + " TP " + string(take_profit), __FILE__);
    }
 
    return modRes;
@@ -209,47 +209,6 @@ bool ModifyOrder(int ticket, double stop_loss, double take_profit)
 int GetSpread()
 {
    return int(NormalizeDouble(MathPow(10, DIGIT) * MathAbs(Ask - Bid), 0));
-}
-
-int GetDistanceInPoints(double fromPrice, double toPrice, bool useAbsolute=false)
-{
-   if (useAbsolute)
-   {
-      return int(NormalizeDouble(MathPow(10, DIGIT) * MathAbs((fromPrice - toPrice)), 0));
-   }
-   else
-   {
-      return int(NormalizeDouble(MathPow(10, DIGIT) * (fromPrice - toPrice), 0));
-   }
-}
-
-int GetDistanceInPoints(int ticket)
-{
-   bool orderSelected = OrderSelect(ticket, SELECT_BY_TICKET);
-   
-   if (orderSelected)
-   {
-      int orderType = OrderType();
-
-      if (orderType == OP_BUY)
-      {
-         return GetDistanceInPoints(Bid, OrderOpenPrice());
-      }
-      else if (orderType == OP_SELL)
-      {
-         return GetDistanceInPoints(OrderOpenPrice(), Ask);
-      }
-      else
-      {
-         Print("Only BUY and SELL order allowed for calling this function.");
-         return CERR_INVALID_ORDER_TYPE;
-      }
-   }
-   else
-   {
-      Print("Order ", ticket, " cannot be selected. Reason ", GetLastError());
-      return CERR_ORDER_NOT_SELECTED;
-   }
 }
 
 int GetTotalOrderCount(string symbol, int magicNumber)
