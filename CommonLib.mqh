@@ -53,17 +53,55 @@ enum instrumentClass
    Exotic=3,
    Metals=4,
    Indices=5,
-   Commodities=6
+   Commodities=6,
+   Ngn=7
 };
 
 const int      DIGIT = int(MarketInfo(Symbol(), MODE_DIGITS));
 const string   MAJOR[19] = {"AUDJPY", "AUDUSD", "CHFJPY", "EURAUD", "EURCAD", "EURCHF", "EURGBP", "EURJPY", "EURUSD", "GBPAUD", "GBPCAD", "GBPCHF", "GBPJPY", "GBPUSD", "NZDJPY", "NZDUSD", "USDCAD", "USDCHF", "USDJPY"};
 const string   MINOR[17] = {"AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "CADJPY", "EURDKK", "EURNOK", "EURNZD", "EURSEK", "GBPNZD", "NZDCAD", "NZDCHF", "USDDKK", "USDHKD", "USDNOK", "USDSEK", "USDSGD"};
 const string   EXOTIC[12] = {"EURHKD", "EURPLN", "EURTRY", "GBPDKK", "GBPPLN", "GBPSEK", "USDCZK", "USDHUF", "USDMXN", "USDPLN", "USDTRY", "USDZAR"};
-const string   METALS[2] = {"XAGUSD", "XAUUSD"};
+const string   METALS[3] = {"XAGUSD", "XAUUSD", "XAUEUR"};
 const string   INDICES[11] = {"AUS200", "FCHI40", "GDAXIm", "HSI50", "Jap225", "ND100m", "SP500m", "SPN35", "STOX50", "UK100", "WSt30m"};
 const string   COMMODITIES[3] = {"Crude", "Brent", "NatGas"};
+const string   NGN[2] = {"EURNGN", "USDNGN"};
+const string   UNKNOWN = "_unknown_";
 
+string GetInstrumentClass(string instrument)
+{
+   if (isElementMemberOf(instrument, MAJOR))
+   {
+      return EnumToString(Major);
+   }
+   else if (isElementMemberOf(instrument, MINOR))
+   {
+      return EnumToString(Minor);
+   }
+   else if (isElementMemberOf(instrument, EXOTIC))
+   {
+      return EnumToString(Exotic);
+   }
+   else if (isElementMemberOf(instrument, METALS))
+   {
+      return EnumToString(Metals);
+   }
+   else if (isElementMemberOf(instrument, INDICES))
+   {
+      return EnumToString(Indices);
+   }
+   else if (isElementMemberOf(instrument, COMMODITIES))
+   {
+      return EnumToString(Commodities);
+   }
+   else if (isElementMemberOf(instrument, NGN))
+   {
+      return EnumToString(Ngn);
+   }
+   else
+   {
+      return UNKNOWN;
+   }
+}
 
 bool isElementMemberOf(string key, const string& array[])
 {
